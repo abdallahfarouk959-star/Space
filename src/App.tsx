@@ -6,6 +6,7 @@
 import { lazy, Suspense } from "react";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { Navigation } from "./components/Navigation";
+import { Footer } from "./components/Footer"; // 👈 استيراد الفوتر هنا
 import { motion } from "motion/react";
 
 const Home = lazy(() => import("./pages/Home"));
@@ -48,6 +49,9 @@ export default function App() {
             </Routes>
           </Suspense>
         </main>
+        
+        {/* 👈 الفوتر اتحط هنا عشان يظهر في كل الصفحات تحت خالص */}
+        <Footer />
       </div>
     </BrowserRouter>
   );
