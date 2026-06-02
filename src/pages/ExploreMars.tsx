@@ -1,9 +1,8 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { motion, AnimatePresence } from "motion/react";
+import { motion, AnimatePresence } from "framer-motion"; // تم التعديل إلى framer-motion لتجنب أخطاء الاستيراد
 import { GlassCard } from "../components/GlassCard";
 
-// تحديث الـ Interface ليتوافق مع بيانات APOD
 interface ApodPhoto {
   title: string;
   date: string;
@@ -21,13 +20,14 @@ export default function ExploreMars() {
     const fetchPhotos = async () => {
       try {
         setLoading(true);
-        // استخدام API الفضاء اليومي (APOD)
-        // ⚠️ مهم: استبدل DEMO_KEY بالـ API Key اللي جالك على الإيميل
+        
+        // استدعاء المفتاح السري من ملف البيئة بأمان تام
+        const apiKey = import.meta.env.VITE_NASA_API_KEY || "DEMO_KEY";
+        
         const response = await axios.get(
-          "https://api.nasa.gov/planetary/apod?count=12&api_key=jPXz9YXkODRnk2C4jdbJC3E23JadJWG1Kd3qo4HO"
+          `https://api.nasa.gov/planetary/apod?count=12&api_key=${apiKey}`
         );
 
-        // التأكد من جلب الصور فقط واستبعاد الفيديوهات
         const imageOnlyData = response.data.filter((item: ApodPhoto) => item.media_type === 'image');
 
         setPhotos(imageOnlyData);
