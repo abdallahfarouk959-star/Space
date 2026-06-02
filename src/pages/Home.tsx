@@ -66,9 +66,18 @@ const MiniSolarSystem = () => {
       {/* رسم كل الكواكب بـ map بسيط */}
       {planetsData.map((p, i) => (
         <group key={i} rotation={[0, p.angle, 0]}>
+          
+          {/* إضافة المدار (Ring) */}
+          <mesh rotation={[-Math.PI / 2, 0, 0]}>
+            <ringGeometry args={[p.distance - 0.02, p.distance + 0.02, 64]} />
+            <meshBasicMaterial color="#ffffff" opacity={0.15} transparent side={THREE.DoubleSide} />
+          </mesh>
+
+          {/* الكوكب */}
           <Sphere args={[p.size, 32, 32]} position={[p.distance, p.yOffset, 0]}>
             <meshStandardMaterial map={p.map} roughness={0.6} />
           </Sphere>
+          
         </group>
       ))}
     </group>
