@@ -12,17 +12,16 @@ interface Planet {
   moonsCount: number;
   massValue: number;
   massExponent: number;
-  textureUrls: string[]; // قائمة روابط احتياطية لكل كوكب لضمان ظهور الملامح 100%
+  textureUrls: string[];
   fallbackColor: string;
 }
 
-// داتا الكواكب مع روابط من سيرفرات قوية (GitHub و Unpkg) لتخطي أي حظر
 const SOLAR_SYSTEM_DATA: Planet[] = [
   { id: "earth", englishName: "Earth", gravity: 9.8, density: 5.51, moonsCount: 1, massValue: 5.97, massExponent: 24, fallbackColor: "#3b82f6", textureUrls: ["https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg", "https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/earthmap1k.jpg"] },
   { id: "mars", englishName: "Mars", gravity: 3.71, density: 3.93, moonsCount: 2, massValue: 6.41, massExponent: 23, fallbackColor: "#ef4444", textureUrls: ["https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mars_1k_color.jpg", "https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/marsmap1k.jpg"] },
   { id: "jupiter", englishName: "Jupiter", gravity: 24.79, density: 1.32, moonsCount: 95, massValue: 1.89, massExponent: 27, fallbackColor: "#f59e0b", textureUrls: ["https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/jupitermap.jpg", "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/jupiter_1k_color.jpg"] },
   { id: "venus", englishName: "Venus", gravity: 8.87, density: 5.24, moonsCount: 0, massValue: 4.86, massExponent: 24, fallbackColor: "#eab308", textureUrls: ["https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/venus_surface.jpg", "https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/venusmap.jpg"] },
-  { id: "saturn", englishName: "Saturn", gravity: 10.44, density: 0.68, moonsCount: 146, massValue: 5.68, massExponent: 26, fallbackColor: "#fcd34d", textureUrls: ["https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/saturnmap.jpg", "https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/saturnringcolor.jpg"] },
+  { id: "saturn", englishName: "Saturn", gravity: 10.44, density: 0.68, moonsCount: 146, massValue: 5.68, massExponent: 26, fallbackColor: "#fcd34d", textureUrls: ["https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/saturnmap.jpg"] },
   { id: "uranus", englishName: "Uranus", gravity: 8.69, density: 1.27, moonsCount: 28, massValue: 8.68, massExponent: 25, fallbackColor: "#06b6d4", textureUrls: ["https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/uranusmap.jpg"] },
   { id: "neptune", englishName: "Neptune", gravity: 11.15, density: 1.63, moonsCount: 16, massValue: 1.02, massExponent: 26, fallbackColor: "#1d4ed8", textureUrls: ["https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/neptunemap.jpg"] },
   { id: "mercury", englishName: "Mercury", gravity: 3.7, density: 5.42, moonsCount: 0, massValue: 3.3, massExponent: 23, fallbackColor: "#a1a1aa", textureUrls: ["https://raw.githubusercontent.com/jeromeetienne/threex.planets/master/images/mercurymap.jpg"] },
@@ -39,26 +38,26 @@ const PlanetMesh = ({ textureUrls, fallbackColor }: { textureUrls: string[], fal
     const loader = new THREE.TextureLoader();
     loader.setCrossOrigin("anonymous");
 
-    // دالة المحاولة المتتالية: لو رابط وقع، تجرب اللي بعده فوراً من غير ما توقّع الموقع
     const loadTexture = (index: number) => {
-      if (index >= textureUrls.length) return; // لو كل الروابط وقعت هتسيب اللون البديل شغال
+      if (index >= textureUrls.length) return; 
 
       loader.load(
         textureUrls[index],
         (loadedTexture) => {
           if (isMounted) {
-            setTexture(loadedTexture); // الخريطة الحقيقية ركبت بنجاح!
+            // تحديث إجباري للألوان عشان نمنع الكوكب الأبيض
+            loadedTexture.colorSpace = THREE.SRGBColorSpace;
+            setTexture(loadedTexture);
           }
         },
         undefined,
         () => {
-          console.warn(`Fallback triggered: trying next source for texture...`);
-          loadTexture(index + 1); // الرابط فشل، يلا نجرب اللي بعده بسرعة
+          loadTexture(index + 1);
         }
       );
     };
 
-    loadTexture(0); // ابدأ بأول رابط
+    loadTexture(0);
 
     return () => {
       isMounted = false;
@@ -67,12 +66,12 @@ const PlanetMesh = ({ textureUrls, fallbackColor }: { textureUrls: string[], fal
 
   return (
     <Sphere args={[1.25, 64, 64]}>
-      {/* استخدمنا StandardMaterial مع الإضاءة عشان التضاريس والخرائط تبان واقعية جداً */}
-      <meshStandardMaterial 
-        map={texture || null} 
-        color={texture ? "#ffffff" : fallbackColor}
-        roughness={0.7} 
-      />
+      {/* هنا فصلنا الخامات تماماً عشان المحرك يترسم من جديد بالخريطة وميطلعش أبيض */}
+      {texture ? (
+        <meshStandardMaterial map={texture} color="#ffffff" roughness={0.6} />
+      ) : (
+        <meshStandardMaterial color={fallbackColor} roughness={0.6} />
+      )}
     </Sphere>
   );
 };
@@ -117,9 +116,8 @@ export default function Planets() {
 
           <div style={{ width: "100%", height: "450px", position: "relative" }}>
             <Canvas camera={{ position: [0, 0, 3.0], fov: 45 }}>
-              {/* رجعنا الإضاءة عشان تدي عمق ثلاثي الأبعاد لملامح الكواكب الحقيقية */}
               <ambientLight intensity={0.6} />
-              <directionalLight position={[5, 3, 5]} intensity={2} color="#ffffff" />
+              <directionalLight position={[5, 3, 5]} intensity={2.5} color="#ffffff" />
               <Stars radius={100} depth={50} count={2500} factor={4} saturation={0.5} fade speed={1} />
               
               <PlanetMesh 
