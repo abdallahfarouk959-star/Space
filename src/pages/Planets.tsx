@@ -1,4 +1,4 @@
-import { useState, Suspense } from "react";
+import { useState, Suspense, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Sphere, Stars, useTexture } from "@react-three/drei";
 import { GlassCard } from "../components/GlassCard";
@@ -26,6 +26,11 @@ const SOLAR_SYSTEM_DATA: Planet[] = [
   { id: "moon", englishName: "Moon", gravity: 1.62, density: 3.34, moonsCount: 0, massValue: 7.34, massExponent: 22, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1k_color.jpg" }
 ];
 
+// عمل Preload مسبق لكل الصور فوراً عند تشغيل التطبيق لمنع الـ 404 نهائياً
+SOLAR_SYSTEM_DATA.forEach(planet => {
+  useTexture.preload(planet.textureUrl);
+});
+
 const PlanetMesh = ({ textureUrl }: { textureUrl: string }) => {
   const texture = useTexture(textureUrl);
   return (
@@ -41,6 +46,7 @@ export default function Planets() {
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row gap-6 p-2 select-none">
+      {/* القائمة الجانبية */}
       <GlassCard className="w-full lg:w-1/4 flex flex-col gap-3 max-h-[150px] lg:max-h-[600px] overflow-y-auto p-4 hide-scrollbar">
         <h2 className="text-lg font-black uppercase tracking-widest text-space-cyan mb-2 border-b border-white/10 pb-2 hidden lg:block">
           Planets explorer
@@ -62,6 +68,7 @@ export default function Planets() {
         </div>
       </GlassCard>
 
+      {/* منطقة العرض */}
       <div className="w-full lg:w-3/4 flex flex-col gap-6">
         <GlassCard className="flex-1 relative overflow-hidden flex flex-col items-center justify-center min-h-[450px] bg-black/60 border border-white/10 rounded-[2rem] p-0">
           <div className="absolute top-6 left-6 z-30 pointer-events-none">
@@ -76,14 +83,18 @@ export default function Planets() {
           <div style={{ width: "100%", height: "450px", position: "relative" }}>
             <Canvas camera={{ position: [0, 0, 3.0], fov: 45 }}>
               <Stars radius={100} depth={50} count={2500} factor={4} saturation={0.5} fade speed={1} />
+              
+              {/* قمنا بربط الـ key بـ الـ Url عشان ريأكت تفهم التغيير اللحظي جوه الـ Suspense */}
               <Suspense fallback={null}>
-                <PlanetMesh textureUrl={selectedPlanet.textureUrl} />
+                <PlanetMesh key={selectedPlanet.textureUrl} textureUrl={selectedPlanet.textureUrl} />
               </Suspense>
+              
               <OrbitControls enableZoom={true} autoRotate autoRotateSpeed={0.3} />
             </Canvas>
           </div>
         </GlassCard>
 
+        {/* كروت البيانات */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <GlassCard className="p-4 text-center flex flex-col justify-center">
             <span className="text-[9px] uppercase text-gray-400 tracking-widest block mb-1 font-bold">Gravity</span>
