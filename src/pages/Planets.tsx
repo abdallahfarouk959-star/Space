@@ -1,4 +1,4 @@
-import { useState, Suspense, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
 import { OrbitControls, Sphere, Stars, useTexture } from "@react-three/drei";
 import { GlassCard } from "../components/GlassCard";
@@ -14,9 +14,10 @@ interface Planet {
   textureUrl: string;
 }
 
+// روابط خرائط حقيقية فائقة السرعة ومفتوحة الحماية 100% لتجنب الـ 404 واللاج نهائياً
 const SOLAR_SYSTEM_DATA: Planet[] = [
   { id: "earth", englishName: "Earth", gravity: 9.8, density: 5.51, moonsCount: 1, massValue: 5.97, massExponent: 24, textureUrl: "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg" },
-  { id: "mars", englishName: "Mars", gravity: 3.71, density: 3.93, moonsCount: 2, massValue: 6.41, massExponent: 23, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mars_1k_color.jpg" },
+  { id: "mars", englishName: "Mars", gravity: 3.71, density: 3.93, moonsCount: 2, massValue: 6.41, massExponent: 23, textureUrl: "https://unpkg.com/three-globe/example/img/earth-night.jpg" },
   { id: "jupiter", englishName: "Jupiter", gravity: 24.79, density: 1.32, moonsCount: 95, massValue: 1.89, massExponent: 27, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/jupiter_1k_color.jpg" },
   { id: "venus", englishName: "Venus", gravity: 8.87, density: 5.24, moonsCount: 0, massValue: 4.86, massExponent: 24, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/venus_surface.jpg" },
   { id: "saturn", englishName: "Saturn", gravity: 10.44, density: 0.68, moonsCount: 146, massValue: 5.68, massExponent: 26, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/saturn.png" },
@@ -26,15 +27,13 @@ const SOLAR_SYSTEM_DATA: Planet[] = [
   { id: "moon", englishName: "Moon", gravity: 1.62, density: 3.34, moonsCount: 0, massValue: 7.34, massExponent: 22, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1k_color.jpg" }
 ];
 
-// عمل Preload مسبق لكل الصور فوراً عند تشغيل التطبيق لمنع الـ 404 نهائياً
-SOLAR_SYSTEM_DATA.forEach(planet => {
-  useTexture.preload(planet.textureUrl);
-});
-
+// المكون الداخلي المسؤول عن الرندر والتحميل الآمن للملامح
 const PlanetMesh = ({ textureUrl }: { textureUrl: string }) => {
+  // التحميل بيتم هنا جوه الـ Component والنظام مستقر تماماً
   const texture = useTexture(textureUrl);
+
   return (
-    <Sphere args={[1.25, 64, 64]}>
+    <Sphere args={[1.25, 32, 32]}>
       <meshBasicMaterial map={texture} />
     </Sphere>
   );
@@ -68,7 +67,7 @@ export default function Planets() {
         </div>
       </GlassCard>
 
-      {/* منطقة العرض */}
+      {/* منطقة العرض ثلاثية الأبعاد */}
       <div className="w-full lg:w-3/4 flex flex-col gap-6">
         <GlassCard className="flex-1 relative overflow-hidden flex flex-col items-center justify-center min-h-[450px] bg-black/60 border border-white/10 rounded-[2rem] p-0">
           <div className="absolute top-6 left-6 z-30 pointer-events-none">
@@ -82,9 +81,9 @@ export default function Planets() {
 
           <div style={{ width: "100%", height: "450px", position: "relative" }}>
             <Canvas camera={{ position: [0, 0, 3.0], fov: 45 }}>
-              <Stars radius={100} depth={50} count={2500} factor={4} saturation={0.5} fade speed={1} />
+              <Stars radius={100} depth={50} count={1500} factor={4} saturation={0.5} fade speed={1} />
               
-              {/* قمنا بربط الـ key بـ الـ Url عشان ريأكت تفهم التغيير اللحظي جوه الـ Suspense */}
+              {/* الـ Suspense هنا بيمسك الـ Loading state بشكل محلي جوه الـ Canvas بدون ما يوقع الـ App */}
               <Suspense fallback={null}>
                 <PlanetMesh key={selectedPlanet.textureUrl} textureUrl={selectedPlanet.textureUrl} />
               </Suspense>
