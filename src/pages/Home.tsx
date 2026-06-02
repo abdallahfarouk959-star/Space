@@ -27,48 +27,50 @@ class WebGLBoundary extends Component<{children: ReactNode, fallback: ReactNode}
 const MiniSolarSystem = () => {
   const groupRef = useRef<THREE.Group>(null);
   
-  // تحميل الصور اللي في الـ public
-  const [earth, mars, jupiter] = useTexture([
+  // تحميل الـ 8 صور اللي في فولدر public/textures
+  const textures = useTexture([
+    "/textures/mercury.jpg",
+    "/textures/venus_surface.jpg",
     "/textures/earth_daymap.jpg",
     "/textures/mars.jpg",
-    "/textures/jupiter.jpg"
+    "/textures/jupiter.jpg",
+    "/textures/saturn.jpg",
+    "/textures/uranus.jpg",
+    "/textures/neptune.jpg"
   ]);
 
-  // أنيميشن الدوران
+  // مصفوفة البيانات لكل الكواكب
+  const planetsData = [
+    { map: textures[0], size: 0.2, distance: 2.5, angle: 0, yOffset: 0 },
+    { map: textures[1], size: 0.3, distance: 3.5, angle: 1, yOffset: 0.2 },
+    { map: textures[2], size: 0.4, distance: 4.8, angle: 2, yOffset: -0.2 },
+    { map: textures[3], size: 0.25, distance: 6.0, angle: 3.5, yOffset: 0.4 },
+    { map: textures[4], size: 0.8, distance: 8.5, angle: 5, yOffset: -0.5 },
+    { map: textures[5], size: 0.65, distance: 11.0, angle: 0.5, yOffset: 0.3 },
+    { map: textures[6], size: 0.5, distance: 13.5, angle: 2.5, yOffset: -0.4 },
+    { map: textures[7], size: 0.45, distance: 16.0, angle: 4.2, yOffset: 0.1 },
+  ];
+
   useFrame(({ clock }) => {
-    if (groupRef.current) {
-      groupRef.current.rotation.y = clock.getElapsedTime() * 0.15;
-    }
+    if (groupRef.current) groupRef.current.rotation.y = clock.getElapsedTime() * 0.08;
   });
 
   return (
     <group ref={groupRef}>
       {/* الشمس */}
-      <Sphere args={[1.5, 32, 32]} position={[0, 0, 0]}>
+      <Sphere args={[1.5, 32, 32]}>
         <meshBasicMaterial color="#fcd34d" />
-        <pointLight intensity={3} distance={30} color="#ffffff" />
+        <pointLight intensity={3} distance={50} color="#ffffff" />
       </Sphere>
 
-      {/* الأرض */}
-      <group rotation={[0, 0, 0]}>
-        <Sphere args={[0.5, 32, 32]} position={[3.5, 0, 0]}>
-          <meshStandardMaterial map={earth} roughness={0.6} />
-        </Sphere>
-      </group>
-
-      {/* المريخ */}
-      <group rotation={[0, 2, 0]}>
-        <Sphere args={[0.3, 32, 32]} position={[5.5, 0.5, 0]}>
-          <meshStandardMaterial map={mars} roughness={0.6} />
-        </Sphere>
-      </group>
-
-      {/* المشترى */}
-      <group rotation={[0, 4, 0]}>
-        <Sphere args={[0.8, 32, 32]} position={[8.5, -0.5, 0]}>
-          <meshStandardMaterial map={jupiter} roughness={0.6} />
-        </Sphere>
-      </group>
+      {/* رسم كل الكواكب بـ map بسيط */}
+      {planetsData.map((p, i) => (
+        <group key={i} rotation={[0, p.angle, 0]}>
+          <Sphere args={[p.size, 32, 32]} position={[p.distance, p.yOffset, 0]}>
+            <meshStandardMaterial map={p.map} roughness={0.6} />
+          </Sphere>
+        </group>
+      ))}
     </group>
   );
 };
