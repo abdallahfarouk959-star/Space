@@ -1,0 +1,6 @@
+{
+  "name": "Space Explorer Hub",
+  "description": "A comprehensive Front-End mega-project featuring NASA APIs, advanced animations, and robust routing.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
