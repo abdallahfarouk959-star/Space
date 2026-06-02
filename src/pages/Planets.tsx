@@ -45,7 +45,6 @@ const PlanetMesh = ({ textureUrls, fallbackColor }: { textureUrls: string[], fal
         textureUrls[index],
         (loadedTexture) => {
           if (isMounted) {
-            // تحديث إجباري للألوان عشان نمنع الكوكب الأبيض
             loadedTexture.colorSpace = THREE.SRGBColorSpace;
             setTexture(loadedTexture);
           }
@@ -66,11 +65,11 @@ const PlanetMesh = ({ textureUrls, fallbackColor }: { textureUrls: string[], fal
 
   return (
     <Sphere args={[1.25, 64, 64]}>
-      {/* هنا فصلنا الخامات تماماً عشان المحرك يترسم من جديد بالخريطة وميطلعش أبيض */}
+      {/* الحل الجذري: meshBasicMaterial مش بتتلسع من الإضاءة وبتعرض الخريطة الواقعية بوضوح تام */}
       {texture ? (
-        <meshStandardMaterial map={texture} color="#ffffff" roughness={0.6} />
+        <meshBasicMaterial map={texture} />
       ) : (
-        <meshStandardMaterial color={fallbackColor} roughness={0.6} />
+        <meshBasicMaterial color={fallbackColor} />
       )}
     </Sphere>
   );
@@ -116,8 +115,6 @@ export default function Planets() {
 
           <div style={{ width: "100%", height: "450px", position: "relative" }}>
             <Canvas camera={{ position: [0, 0, 3.0], fov: 45 }}>
-              <ambientLight intensity={0.6} />
-              <directionalLight position={[5, 3, 5]} intensity={2.5} color="#ffffff" />
               <Stars radius={100} depth={50} count={2500} factor={4} saturation={0.5} fade speed={1} />
               
               <PlanetMesh 
@@ -130,7 +127,6 @@ export default function Planets() {
           </div>
         </GlassCard>
 
-        {/* الكروت السفلية */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <GlassCard className="p-4 text-center flex flex-col justify-center">
             <span className="text-[9px] uppercase text-gray-400 tracking-widest block mb-1 font-bold">Gravity</span>
