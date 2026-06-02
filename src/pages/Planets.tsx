@@ -1,6 +1,7 @@
-import { useState, Suspense } from "react";
+import { useState, useEffect } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Sphere, Stars, useTexture } from "@react-three/drei";
+import { OrbitControls, Sphere, Stars } from "@react-three/drei";
+import * as THREE from "three";
 import { GlassCard } from "../components/GlassCard";
 
 interface Planet {
@@ -12,29 +13,56 @@ interface Planet {
   massValue: number;
   massExponent: number;
   textureUrl: string;
+  fallbackColor: string; // لون بديل يظهر فوراً في حالة تأخر الصورة أو فشلها
 }
 
-// روابط خرائط حقيقية فائقة السرعة ومفتوحة الحماية 100% لتجنب الـ 404 واللاج نهائياً
+// روابط الصور مع ألوان بديلة احترافية
 const SOLAR_SYSTEM_DATA: Planet[] = [
-  { id: "earth", englishName: "Earth", gravity: 9.8, density: 5.51, moonsCount: 1, massValue: 5.97, massExponent: 24, textureUrl: "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg" },
-  { id: "mars", englishName: "Mars", gravity: 3.71, density: 3.93, moonsCount: 2, massValue: 6.41, massExponent: 23, textureUrl: "https://unpkg.com/three-globe/example/img/earth-night.jpg" },
-  { id: "jupiter", englishName: "Jupiter", gravity: 24.79, density: 1.32, moonsCount: 95, massValue: 1.89, massExponent: 27, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/jupiter_1k_color.jpg" },
-  { id: "venus", englishName: "Venus", gravity: 8.87, density: 5.24, moonsCount: 0, massValue: 4.86, massExponent: 24, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/venus_surface.jpg" },
-  { id: "saturn", englishName: "Saturn", gravity: 10.44, density: 0.68, moonsCount: 146, massValue: 5.68, massExponent: 26, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/saturn.png" },
-  { id: "uranus", englishName: "Uranus", gravity: 8.69, density: 1.27, moonsCount: 28, massValue: 8.68, massExponent: 25, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/uranus.png" },
-  { id: "neptune", englishName: "Neptune", gravity: 11.15, density: 1.63, moonsCount: 16, massValue: 1.02, massExponent: 26, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/neptune.png" },
-  { id: "mercury", englishName: "Mercury", gravity: 3.7, density: 5.42, moonsCount: 0, massValue: 3.3, massExponent: 23, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mercury.png" },
-  { id: "moon", englishName: "Moon", gravity: 1.62, density: 3.34, moonsCount: 0, massValue: 7.34, massExponent: 22, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1k_color.jpg" }
+  { id: "earth", englishName: "Earth", gravity: 9.8, density: 5.51, moonsCount: 1, massValue: 5.97, massExponent: 24, fallbackColor: "#3b82f6", textureUrl: "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg" },
+  { id: "mars", englishName: "Mars", gravity: 3.71, density: 3.93, moonsCount: 2, massValue: 6.41, massExponent: 23, fallbackColor: "#ef4444", textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mars_1k_color.jpg" },
+  { id: "jupiter", englishName: "Jupiter", gravity: 24.79, density: 1.32, moonsCount: 95, massValue: 1.89, massExponent: 27, fallbackColor: "#f59e0b", textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/jupiter_1k_color.jpg" },
+  { id: "venus", englishName: "Venus", gravity: 8.87, density: 5.24, moonsCount: 0, massValue: 4.86, massExponent: 24, fallbackColor: "#eab308", textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/venus_surface.jpg" },
+  { id: "saturn", englishName: "Saturn", gravity: 10.44, density: 0.68, moonsCount: 146, massValue: 5.68, massExponent: 26, fallbackColor: "#fcd34d", textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/saturn.png" },
+  { id: "uranus", englishName: "Uranus", gravity: 8.69, density: 1.27, moonsCount: 28, massValue: 8.68, massExponent: 25, fallbackColor: "#06b6d4", textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/uranus.png" },
+  { id: "neptune", englishName: "Neptune", gravity: 11.15, density: 1.63, moonsCount: 16, massValue: 1.02, massExponent: 26, fallbackColor: "#1d4ed8", textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/neptune.png" },
+  { id: "mercury", englishName: "Mercury", gravity: 3.7, density: 5.42, moonsCount: 0, massValue: 3.3, massExponent: 23, fallbackColor: "#a1a1aa", textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mercury.png" },
+  { id: "moon", englishName: "Moon", gravity: 1.62, density: 3.34, moonsCount: 0, massValue: 7.34, massExponent: 22, fallbackColor: "#d4d4d8", textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1k_color.jpg" }
 ];
 
-// المكون الداخلي المسؤول عن الرندر والتحميل الآمن للملامح
-const PlanetMesh = ({ textureUrl }: { textureUrl: string }) => {
-  // التحميل بيتم هنا جوه الـ Component والنظام مستقر تماماً
-  const texture = useTexture(textureUrl);
+// محمل الصور الآمن جداً (Anti-Crash Component)
+const PlanetMesh = ({ textureUrl, fallbackColor }: { textureUrl: string, fallbackColor: string }) => {
+  const [texture, setTexture] = useState<THREE.Texture | null>(null);
+
+  useEffect(() => {
+    let isMounted = true;
+    setTexture(null); // إعادة تعيين الصورة عند تغيير الكوكب
+
+    const loader = new THREE.TextureLoader();
+    loader.setCrossOrigin("anonymous");
+
+    loader.load(
+      textureUrl,
+      (loadedTexture) => {
+        if (isMounted) setTexture(loadedTexture);
+      },
+      undefined,
+      (error) => {
+        console.warn(`Could not load texture for ${textureUrl}, using fallback color.`, error);
+        // لو حصل 404 للصورة من السيرفر، الموقع مش هيقع، هيفضل شغال باللون البديل!
+      }
+    );
+
+    return () => {
+      isMounted = false;
+    };
+  }, [textureUrl]);
 
   return (
-    <Sphere args={[1.25, 32, 32]}>
-      <meshBasicMaterial map={texture} />
+    <Sphere args={[1.25, 64, 64]}>
+      <meshBasicMaterial 
+        map={texture || null} 
+        color={texture ? "#ffffff" : fallbackColor} 
+      />
     </Sphere>
   );
 };
@@ -81,12 +109,13 @@ export default function Planets() {
 
           <div style={{ width: "100%", height: "450px", position: "relative" }}>
             <Canvas camera={{ position: [0, 0, 3.0], fov: 45 }}>
-              <Stars radius={100} depth={50} count={1500} factor={4} saturation={0.5} fade speed={1} />
+              <Stars radius={100} depth={50} count={2500} factor={4} saturation={0.5} fade speed={1} />
               
-              {/* الـ Suspense هنا بيمسك الـ Loading state بشكل محلي جوه الـ Canvas بدون ما يوقع الـ App */}
-              <Suspense fallback={null}>
-                <PlanetMesh key={selectedPlanet.textureUrl} textureUrl={selectedPlanet.textureUrl} />
-              </Suspense>
+              {/* استغنينا تماماً عن Suspense هنا */}
+              <PlanetMesh 
+                textureUrl={selectedPlanet.textureUrl} 
+                fallbackColor={selectedPlanet.fallbackColor} 
+              />
               
               <OrbitControls enableZoom={true} autoRotate autoRotateSpeed={0.3} />
             </Canvas>
