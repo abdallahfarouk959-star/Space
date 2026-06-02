@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, Suspense } from "react";
 import { Canvas } from "@react-three/fiber";
-import { OrbitControls, Sphere, Stars } from "@react-three/drei";
+import { OrbitControls, Sphere, Stars, useTexture } from "@react-three/drei";
 import { GlassCard } from "../components/GlassCard";
 
 interface Planet {
@@ -14,12 +14,11 @@ interface Planet {
   textureUrl: string;
 }
 
-// 1. القائمة الكاملة لكل كواكب المجموعة الشمسية الـ 8 + القمر بروابط صور حقيقية ومضمونة
 const SOLAR_SYSTEM_DATA: Planet[] = [
   { id: "earth", englishName: "Earth", gravity: 9.8, density: 5.51, moonsCount: 1, massValue: 5.97, massExponent: 24, textureUrl: "https://unpkg.com/three-globe/example/img/earth-blue-marble.jpg" },
   { id: "mars", englishName: "Mars", gravity: 3.71, density: 3.93, moonsCount: 2, massValue: 6.41, massExponent: 23, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/mars_1k_color.jpg" },
   { id: "jupiter", englishName: "Jupiter", gravity: 24.79, density: 1.32, moonsCount: 95, massValue: 1.89, massExponent: 27, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/jupiter_1k_color.jpg" },
-  { id: "venus", englishName: "Venus", gravity: 8.87, density: 5.24, moonsCount: 0, massValue: 4.86, massExponent: 24, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/venus_atmosphere.jpg" },
+  { id: "venus", englishName: "Venus", gravity: 8.87, density: 5.24, moonsCount: 0, massValue: 4.86, massExponent: 24, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/venus_surface.jpg" },
   { id: "saturn", englishName: "Saturn", gravity: 10.44, density: 0.68, moonsCount: 146, massValue: 5.68, massExponent: 26, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/saturn.png" },
   { id: "uranus", englishName: "Uranus", gravity: 8.69, density: 1.27, moonsCount: 28, massValue: 8.68, massExponent: 25, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/uranus.png" },
   { id: "neptune", englishName: "Neptune", gravity: 11.15, density: 1.63, moonsCount: 16, massValue: 1.02, massExponent: 26, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/neptune.png" },
@@ -27,56 +26,29 @@ const SOLAR_SYSTEM_DATA: Planet[] = [
   { id: "moon", englishName: "Moon", gravity: 1.62, density: 3.34, moonsCount: 0, massValue: 7.34, massExponent: 22, textureUrl: "https://raw.githubusercontent.com/mrdoob/three.js/master/examples/textures/planets/moon_1k_color.jpg" }
 ];
 
-// مكون عرض الكوكب الحقيقي 3D مع حل مشكلة الألوان السوداء
-const RealPlanet3D = ({ textureUrl }: { textureUrl: string }) => {
+// مكون الكوكب الـ 3D التكتيكي اللي بيجبر الملامح تظهر باستخدامuseTexture
+const PlanetMesh = ({ textureUrl }: { textureUrl: string }) => {
+  // الـ Hook المخصص لتحميل ملامح وتفاصيل الصورة بشكل مجسم حقيقي
+  const texture = useTexture(textureUrl);
+
   return (
-    <div style={{ width: "100%", height: "450px", position: "relative" }}>
-      <Canvas camera={{ position: [0, 0, 3.2], fov: 45 }}>
-        {/* تفريغ إضاءة قوية جداً وموزعة عشان الكوكب ينور من كل حتة ومايطلعش أسود */}
-        <ambientLight intensity={1.5} />
-        <directionalLight position={[5, 5, 5]} intensity={2.5} />
-        <directionalLight position={[-5, -5, -5]} intensity={1.2} />
-        <Stars radius={100} depth={50} count={2000} factor={4} saturation={0.5} fade speed={1} />
-        
-        <Sphere args={[1.2, 64, 64]}>
-          {/* meshStandardMaterial مع إضافة خيار الأمان لمنع السواد */}
-          <meshStandardMaterial 
-            key={textureUrl}
-            roughness={0.6}
-            metalness={0.1}
-          >
-            {/* الدالة السحرية دي بتجبر المتصفح إنه يقبل الصورة بدون حظر حماية (CORS) */}
-            <texture attach="map" url={textureUrl} crossOrigin="anonymous" />
-          </meshStandardMaterial>
-        </Sphere>
-        
-        <OrbitControls enableZoom={true} autoRotate autoRotateSpeed={0.5} />
-      </Canvas>
-    </div>
+    <Sphere args={[1.2, 64, 64]}>
+      <meshStandardMaterial 
+        map={texture} // ربط الخريطة الصورية هنا مباشرة بالخامة
+        roughness={0.7}
+        metalness={0.1}
+      />
+    </Sphere>
   );
 };
 
 export default function Planets() {
   const [planets] = useState<Planet[]>(SOLAR_SYSTEM_DATA);
   const [selectedPlanet, setSelectedPlanet] = useState<Planet>(SOLAR_SYSTEM_DATA[0]);
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 500);
-    return () => clearTimeout(timer);
-  }, []);
-
-  if (loading) {
-    return (
-      <div className="flex-1 flex items-center justify-center text-space-cyan font-bold tracking-widest uppercase animate-pulse">
-        Establishing Holographic Link...
-      </div>
-    );
-  }
 
   return (
     <div className="flex-1 flex flex-col lg:flex-row gap-6 p-2">
-      {/* القائمة الجانبية السكرول */}
+      {/* القائمة الجانبية */}
       <GlassCard className="w-full lg:w-1/4 flex flex-col gap-3 max-h-[150px] lg:max-h-[600px] overflow-y-auto p-4 hide-scrollbar">
         <h2 className="text-lg font-black uppercase tracking-widest text-space-cyan mb-2 border-b border-white/10 pb-2 hidden lg:block">
           Planets explorer
@@ -110,10 +82,23 @@ export default function Planets() {
             </p>
           </div>
           
-          <RealPlanet3D textureUrl={selectedPlanet.textureUrl} />
+          <div style={{ width: "100%", height: "450px", position: "relative" }}>
+            <Canvas camera={{ position: [0, 0, 3.2], fov: 45 }}>
+              <ambientLight intensity={1.2} />
+              <directionalLight position={[5, 3, 5]} intensity={2.5} />
+              <Stars radius={100} depth={50} count={2000} factor={4} saturation={0.5} fade speed={1} />
+              
+              {/* استخدام Suspense إجباري مع useTexture عشان يستنى الصورة تحمل بالكامل بملامحها */}
+              <Suspense fallback={null}>
+                <PlanetMesh textureUrl={selectedPlanet.textureUrl} />
+              </Suspense>
+              
+              <OrbitControls enableZoom={true} autoRotate autoRotateSpeed={0.4} />
+            </Canvas>
+          </div>
         </GlassCard>
 
-        {/* كروت البيانات */}
+        {/* كروت البيانات السريعة */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           <GlassCard className="p-4 text-center flex flex-col justify-center">
             <span className="text-[9px] uppercase text-gray-400 tracking-widest block mb-1 font-bold">Gravity</span>
